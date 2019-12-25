@@ -13,6 +13,9 @@ using Microsoft.Extensions.Options;
 using Microsoft.EntityFrameworkCore;
 using UsineAPI.Data;
 using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace UsineAPI
 {
@@ -28,6 +31,33 @@ namespace UsineAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //security key
+            string securityKey = "le_cle_de_securite_de_gestion_usine";
+
+            //symmetric security key
+
+            var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(securityKey));
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(option =>
+                {
+                    option.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        //what to validate
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateIssuerSigningKey = true,
+                        //setup validate data
+                        ValidIssuer = "med.rami",
+                        ValidAudience = "readers",
+                        IssuerSigningKey = symmetricSecurityKey
+
+
+                   
+                    };
+                }
+                );
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             services.AddDbContext<UsineAPIContext>(options =>
@@ -56,7 +86,7 @@ namespace UsineAPI
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
             });
-
+            app.UseAuthentication();
             app.UseHttpsRedirection();
             app.UseMvc();
         }
